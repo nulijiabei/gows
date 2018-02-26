@@ -1,3 +1,4 @@
+<a href="https://godoc.org/github.com/nulijiabei/freews"><img src="https://godoc.org/github.com/nulijiabei/freews?status.svg" alt="GoDoc"></a>
 
 -------------
 
