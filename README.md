@@ -51,7 +51,19 @@
 	}
 	
 	func (this *HELLO) Nihao(conn *WSConn) {
-		// WSConn = websocket.Conn
+		conn.Write([]byte("Welcome !!!"))
+		r := bufio.NewReader(conn)
+		for {
+			v, err := r.ReadBytes('\n')
+			if err != nil {
+				if err != io.EOF {
+					panic(err)
+				}
+				break
+			}
+			conn.Write(v)
+			conn.Write([]byte("\n"))
+		}
 	}
 	
 	func Test(t *testing.T) {
