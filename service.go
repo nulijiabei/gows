@@ -1,4 +1,4 @@
-package gcpool
+package freews
 
 import (
 	"fmt"
