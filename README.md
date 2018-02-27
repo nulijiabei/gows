@@ -33,24 +33,28 @@
 
 -------------
 
-	package gcpool
+	package main
 	
 	import (
+		"bufio"
+		"io"
 		"log"
-		"testing"
+	
+		"../../../freews"
 	)
 	
 	type Demo struct {
 	}
 	
-	func (this *Demo) Hello(conn *WSConn) {
+	func (this *Demo) Hello(conn *freews.WSConn) {
 		// WSConn = websocket.Conn
 	}
 	
 	type HELLO struct {
 	}
 	
-	func (this *HELLO) Nihao(conn *WSConn) {
+	func (this *HELLO) Nihao(conn *freews.WSConn) {
+		// WSConn = websocket.Conn
 		conn.Write([]byte("Welcome !!!"))
 		r := bufio.NewReader(conn)
 		for {
@@ -66,10 +70,10 @@
 		}
 	}
 	
-	func Test(t *testing.T) {
+	func main() {
 	
 		// New Service
-		service := NewService()
+		service := freews.NewService()
 		// 注册类到服务
 		service.Register(new(Demo))
 		service.Register(new(HELLO))
@@ -81,5 +85,6 @@
 		}
 	
 	}
+
 
 -------------
