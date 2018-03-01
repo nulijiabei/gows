@@ -12,10 +12,12 @@
 			http.Handle("/hello", websocket.Handler(HelloHandler))
 			func HelloHandler(ws *websocket.Conn) {}
 		这样一来如果想 ...
-			func (this *Service) HelloHandler(ws *websocket.Conn) {} 
+			func (this *MyClass) HelloHandler(ws *websocket.Conn) {
+				this.MyData ... 增删改查 ... 等等 ...
+			} 
 		是不可能的 ... 你可能说我可以用全局 ... 
 		但是你可以看看更好的 freews ... 不但可以使用你自定义的类而且支持多个类 ...
-			WSConn = websocket.Conn 的高可移植性 ... 
+			WSConn = websocket.Conn 的高可移植性(只为了让你少引用websocket包) ... 
 		把你之前的实现复制粘贴过来即可 ... websocket 怎么用这里怎么用 ...
 
 -------------
@@ -27,6 +29,8 @@
 	// 自定义访问地址 ...
 	ws://127.0.0.1:8080/demo/hello
 	ws://127.0.0.1:8080/hello/nihao
+	ws://127.0.0.1:8080/v1/baidu
+	ws://127.0.0.1:8080/v2/sina
 
 -------------
 
@@ -86,7 +90,7 @@
 		if err != nil {
 			log.Panic(err)
 		}
-	
+		
 	}
 
 -------------
