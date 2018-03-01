@@ -2,7 +2,7 @@
 
 -------------
 
-	快速将类和子方法转换成WebSocket接口 ...
+	快速将WebSocket集成到自定义类和子方法中 ...
 
 -------------
 
@@ -17,10 +17,6 @@
 		但是你可以看看更好的 freews ... 不但可以使用你自定义的类而且支持多个类 ...
 			WSConn = websocket.Conn 的高可移植性 ... 
 		把你之前的实现复制粘贴过来即可 ... websocket 怎么用这里怎么用 ...
-		
--------------
-	
-	类名称及函数名称均会被转化为小写
 
 -------------
 
@@ -28,6 +24,7 @@
 
 -------------
 
+	// 自定义访问地址 ...
 	ws://127.0.0.1:8080/demo/hello
 	ws://127.0.0.1:8080/hello/nihao
 
@@ -48,6 +45,7 @@
 	
 	func (this *Demo) Hello(conn *freews.WSConn) {
 		// WSConn = websocket.Conn
+		conn.Write([]byte("Baidu !!!"))
 	}
 	
 	type HELLO struct {
@@ -55,7 +53,7 @@
 	
 	func (this *HELLO) Nihao(conn *freews.WSConn) {
 		// WSConn = websocket.Conn
-		conn.Write([]byte("Welcome !!!"))
+		conn.Write([]byte("Sina !!!"))
 		r := bufio.NewReader(conn)
 		for {
 			v, err := r.ReadBytes('\n')
@@ -74,10 +72,15 @@
 	
 		// New Service
 		service := freews.NewService()
-		// 注册类到服务
-		service.Register(new(Demo))
-		service.Register(new(HELLO))
-		...
+		// New Class
+		demo := new(Demo)
+		hello := new(HELLO)
+		// 注册到服务
+		service.Register(demo)
+		service.Register(hello)
+		// 添加路由
+		service.Router("/v1/baidu", demo.Hello)
+		service.Router("/v2/sina", hello.Nihao)
 		// 启动服务
 		err := service.Start(":8080")
 		if err != nil {
@@ -85,6 +88,5 @@
 		}
 	
 	}
-
 
 -------------

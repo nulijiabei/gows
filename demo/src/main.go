@@ -13,6 +13,7 @@ type Demo struct {
 
 func (this *Demo) Hello(conn *freews.WSConn) {
 	// WSConn = websocket.Conn
+	conn.Write([]byte("Baidu !!!"))
 }
 
 type HELLO struct {
@@ -20,7 +21,7 @@ type HELLO struct {
 
 func (this *HELLO) Nihao(conn *freews.WSConn) {
 	// WSConn = websocket.Conn
-	conn.Write([]byte("Welcome !!!"))
+	conn.Write([]byte("Sina !!!"))
 	r := bufio.NewReader(conn)
 	for {
 		v, err := r.ReadBytes('\n')
@@ -37,9 +38,18 @@ func (this *HELLO) Nihao(conn *freews.WSConn) {
 
 func main() {
 
+	// New Service
 	service := freews.NewService()
-	service.Register(new(Demo))
-	service.Register(new(HELLO))
+	// New Class
+	demo := new(Demo)
+	hello := new(HELLO)
+	// 注册到服务
+	service.Register(demo)
+	service.Register(hello)
+	// 添加路由
+	service.Router("/v1/baidu", demo.Hello)
+	service.Router("/v2/sina", hello.Nihao)
+	// 启动服务
 	err := service.Start(":8080")
 	if err != nil {
 		log.Panic(err)

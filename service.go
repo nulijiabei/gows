@@ -1,9 +1,10 @@
 package freews
 
 import (
-	"fmt"
 	"net/http"
 	"reflect"
+	"regexp"
+	"runtime"
 	"strings"
 
 	"./websocket"
@@ -18,16 +19,30 @@ type Domain struct {
 	methods map[string]reflect.Method
 }
 
-// Server Json HTTP
-type Service struct {
-	domain map[string]*Domain
+type R struct {
+	name   string
+	method string
 }
 
-// 创建 Server 其中 def 为路径处理函数 nil 则使用默认
+type Service struct {
+	domain map[string]*Domain
+	router map[string]R
+}
+
+// 创建 Service
 func NewService() *Service {
 	service := new(Service)
 	service.domain = make(map[string]*Domain)
+	service.router = make(map[string]R)
 	return service
+}
+
+// 添加路由
+func (this *Service) Router(path string, method interface{}) {
+	name := runtime.FuncForPC(reflect.ValueOf(method).Pointer()).Name()
+	a1 := regexp.MustCompile(`\(\*.*\)`).FindAllString(name, -1)[0]
+	a2 := regexp.MustCompile(`\).*-`).FindAllString(name, -1)[0]
+	this.router[path] = R{a1[2 : len(a1)-1], a2[2 : len(a2)-1]}
 }
 
 // 将类及方法注册到
@@ -54,38 +69,44 @@ func (this *Service) Register(rcvr interface{}) {
 	this.domain[do.name] = do
 }
 
-func (this *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// 是否匹配 ...
+func (this *Service) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	// 是否匹配
 	status := false
-	// 遍历域
-	for a, do := range this.domain {
-		// 域入口
-		if strings.HasPrefix(strings.ToLower(r.URL.Path), fmt.Sprintf("/%s/", strings.ToLower(a))) {
-			// 遍历函数
-			for b, method := range do.methods {
-				// 函数入口
-				if strings.HasPrefix(strings.ToLower(r.URL.Path), fmt.Sprintf("/%s/%s", strings.ToLower(a), strings.ToLower(b))) {
-					// 标记匹配
-					status = true
-					// WebSocket
-					s := websocket.Server{Handshake: websocket.CheckOrigin}
-					s.ServeWebSocket(w, r, func(conn *WSConn) {
-						// 创建参数集
-						value := make([]reflect.Value, method.Type.NumIn())
-						// 第一个值为类反射值
-						value[0] = do.rcvr
-						// websocket.Conn ...
-						value[1] = reflect.ValueOf(conn)
-						// 调用函数 ... 传参 ... 并获取返回值 ...
-						method.Func.Call(value)
-					})
+	// 遍历路径
+	for path, r := range this.router {
+		// 匹配路径
+		if req.URL.Path == path {
+			// 遍历域
+			for a1, do := range this.domain {
+				// 匹配域名
+				if strings.ToLower(a1) == strings.ToLower(r.name) {
+					// 遍历函数
+					for a2, method := range do.methods {
+						// 匹配函数名
+						if strings.ToLower(a2) == strings.ToLower(r.method) {
+							// 标记匹配
+							status = true
+							// WebSocket
+							s := websocket.Server{Handshake: websocket.CheckOrigin}
+							s.ServeWebSocket(w, req, func(conn *WSConn) {
+								// 创建参数集
+								value := make([]reflect.Value, method.Type.NumIn())
+								// 第一个值为类反射值
+								value[0] = do.rcvr
+								// websocket.Conn ...
+								value[1] = reflect.ValueOf(conn)
+								// 调用函数 ... 传参 ... 并获取返回值 ...
+								method.Func.Call(value)
+							})
+						}
+					}
 				}
 			}
 		}
 	}
 	// 不匹配则 NotFound ...
 	if !status {
-		http.NotFound(w, r)
+		http.NotFound(w, req)
 	}
 }
 
