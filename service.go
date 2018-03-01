@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"regexp"
 	"runtime"
-	"strings"
 
 	"./websocket"
 )
@@ -72,35 +71,26 @@ func (this *Service) Register(rcvr interface{}) {
 func (this *Service) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// 是否匹配
 	status := false
-	// 遍历路径
-	for path, r := range this.router {
-		// 匹配路径
-		if req.URL.Path == path {
-			// 遍历域
-			for a1, do := range this.domain {
-				// 匹配域名
-				if strings.ToLower(a1) == strings.ToLower(r.name) {
-					// 遍历函数
-					for a2, method := range do.methods {
-						// 匹配函数名
-						if strings.ToLower(a2) == strings.ToLower(r.method) {
-							// 标记匹配
-							status = true
-							// WebSocket
-							s := websocket.Server{Handshake: websocket.CheckOrigin}
-							s.ServeWebSocket(w, req, func(conn *WSConn) {
-								// 创建参数集
-								value := make([]reflect.Value, method.Type.NumIn())
-								// 第一个值为类反射值
-								value[0] = do.rcvr
-								// websocket.Conn ...
-								value[1] = reflect.ValueOf(conn)
-								// 调用函数 ... 传参 ... 并获取返回值 ...
-								method.Func.Call(value)
-							})
-						}
-					}
-				}
+	// 匹配路径
+	if r, ok := this.router[req.URL.Path]; ok {
+		// 匹配域
+		if do, ok := this.domain[r.name]; ok {
+			// 匹配函数
+			if method, ok := do.methods[r.method]; ok {
+				// 标记匹配
+				status = true
+				// WebSocket
+				s := websocket.Server{Handshake: websocket.CheckOrigin}
+				s.ServeWebSocket(w, req, func(conn *WSConn) {
+					// 创建参数集
+					value := make([]reflect.Value, method.Type.NumIn())
+					// 第一个值为类反射值
+					value[0] = do.rcvr
+					// websocket.Conn ...
+					value[1] = reflect.ValueOf(conn)
+					// 调用函数 ... 传参 ... 并获取返回值 ...
+					method.Func.Call(value)
+				})
 			}
 		}
 	}
