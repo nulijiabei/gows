@@ -4,14 +4,15 @@ import (
 	"bufio"
 	"io"
 	"log"
+	"net/http"
 
-	"../../../freews"
+	"../../../gows"
 )
 
 type Demo struct {
 }
 
-func (this *Demo) Hello(conn *freews.WSConn) {
+func (this *Demo) Hello(conn *gows.WSConn) {
 	// WSConn = websocket.Conn
 	conn.Write([]byte("Baidu !!!"))
 }
@@ -19,7 +20,7 @@ func (this *Demo) Hello(conn *freews.WSConn) {
 type HELLO struct {
 }
 
-func (this *HELLO) Nihao(conn *freews.WSConn) {
+func (this *HELLO) Nihao(conn *gows.WSConn) {
 	// WSConn = websocket.Conn
 	conn.Write([]byte("Sina !!!"))
 	r := bufio.NewReader(conn)
@@ -36,10 +37,14 @@ func (this *HELLO) Nihao(conn *freews.WSConn) {
 	}
 }
 
+func (this *HELLO) Version(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("Hello Version 1.0"))
+}
+
 func main() {
 
 	// New Service
-	service := freews.NewService()
+	service := gows.NewService()
 	// New Class
 	demo := new(Demo)
 	hello := new(HELLO)
@@ -49,6 +54,7 @@ func main() {
 	// 添加路由
 	service.Router("/v1/baidu", demo.Hello)
 	service.Router("/v2/sina", hello.Nihao)
+	service.Router("/api/version", hello.Version)
 	// 启动服务
 	err := service.Start(":8080")
 	if err != nil {

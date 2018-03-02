@@ -1,6 +1,7 @@
-package freews
+package gows
 
 import (
+	"fmt"
 	"net/http"
 	"reflect"
 	"regexp"
@@ -79,18 +80,39 @@ func (this *Service) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			if method, ok := do.methods[r.method]; ok {
 				// 标记匹配
 				status = true
+				// 创建参数集
+				value := make([]reflect.Value, method.Type.NumIn())
+				// 第一个值为类反射值
+				value[0] = do.rcvr
 				// WebSocket
-				s := websocket.Server{Handshake: websocket.CheckOrigin}
-				s.ServeWebSocket(w, req, func(conn *WSConn) {
-					// 创建参数集
-					value := make([]reflect.Value, method.Type.NumIn())
-					// 第一个值为类反射值
-					value[0] = do.rcvr
-					// websocket.Conn ...
-					value[1] = reflect.ValueOf(conn)
-					// 调用函数 ... 传参 ... 并获取返回值 ...
-					method.Func.Call(value)
-				})
+				if method.Type.NumIn() > 1 {
+					inType := method.Type.In(1).String()
+					switch inType {
+					case "*websocket.Conn":
+						s := websocket.Server{Handshake: websocket.CheckOrigin}
+						s.ServeWebSocket(w, req, func(conn *WSConn) {
+							value[1] = reflect.ValueOf(conn)
+							method.Func.Call(value)
+						})
+						return
+					}
+				}
+				// 遍历注册函数参数类型
+				for n := 1; n < method.Type.NumIn(); n++ {
+					// 获取参数类型
+					inType := method.Type.In(n).String()
+					// 匹配参数类型
+					switch inType {
+					case "http.ResponseWriter":
+						value[n] = reflect.ValueOf(w)
+					case "*http.Request":
+						value[n] = reflect.ValueOf(req)
+					default:
+						fmt.Printf("unsupported in type: %s\n", inType)
+					}
+				}
+				// 调用函数 ... 传参 ...
+				method.Func.Call(value)
 			}
 		}
 	}
