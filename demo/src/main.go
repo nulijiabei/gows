@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"io"
 	"log"
-	"net/http"
 
 	"../../../gows"
 )
@@ -37,10 +36,6 @@ func (this *HELLO) Nihao(conn *gows.WSConn) {
 	}
 }
 
-func (this *HELLO) Version(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Hello Version 1.0"))
-}
-
 func main() {
 
 	// New Service
@@ -54,7 +49,6 @@ func main() {
 	// 添加路由
 	service.Router("/v1/baidu", demo.Hello)
 	service.Router("/v2/sina", hello.Nihao)
-	service.Router("/api/version", hello.Version)
 	// 启动服务
 	err := service.Start(":8080")
 	if err != nil {
